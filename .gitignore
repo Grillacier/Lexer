@@ -1,0 +1,4 @@
+# Ces fichiers sont ignorés pendant les commits
+.idea
+_build
+*.cm{o,x,a}

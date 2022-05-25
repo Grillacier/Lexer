@@ -67,8 +67,31 @@ let rec lancer (c : config) (t: transitionlist) =
         let config = transition c t 1 in
             lancer config t
 
+let rec testTransi (l : transitionlist) (t : transition) =
+    match l with
+    | [] -> true
+    | a::b ->
+        match a with
+        | Transition ( stateEnCours, symboleConsomme, stackConsomme, stateApres, stackAjoute ) ->
+            match t with
+            | Transition ( stateEnCours2, symboleConsomme2, stackConsomme2, stateApres2, stackAjoute2 ) ->
+                if(stateEnCours = stateEnCours2 && (symboleConsomme = symboleConsomme2 || symboleConsomme = ' ' || symboleConsomme2 = ' ') && stackConsomme = stackConsomme2) then
+                    failwith "non déterministe"
+                else
+                    testTransi b t
+
+let rec testDeterministe (l : transitionlist) =
+    match l with
+    | [] -> true
+    | a::b -> testTransi b a && testDeterministe b
+
 
 let init (m : mot ) (a : automate) =
     match a with
     | Automate (inputSymbols, stackSymbols, states, initialState, initialStack, transi) ->
-        Config(initialState, [initialStack], m)
+        if(List.mem initialState states = false) then failwith "état initial non dans l’ensemble des états"
+        else if(List.mem initialStack stackSymbols = false) then failwith "symbole de pile initial non dans l'ensemble des symboles de pile"
+        else if(testDeterministe transi = true) then
+            Config(initialState, [initialStack], m)
+        else
+            failwith "quelque chose s'est mal passé"

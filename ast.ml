@@ -47,7 +47,7 @@ let rec transition (c : config) (t: transitionlist) (i:int) =
                 match a with
                 | Transition ( stateEnCours, symboleConsomme, stackConsomme, stateApres, stackAjoute ) ->
                     if(String.length motRestant = 0 && stateEnCoursPil = stateEnCours && stackConsomme = List.hd pil && symboleConsomme = ' ' ) then
-                        Config(stateApres, ajoutPile pil [], motRestant)
+                        Config(stateApres, ajoutPile pil (List.rev stackAjoute), motRestant)
                     else if (stateEnCoursPil = stateEnCours && stackConsomme = List.hd pil && String.make 1 symboleConsomme = String.sub motRestant 0 1 ) then
                         Config(stateApres, ajoutPile pil (List.rev stackAjoute), String.sub motRestant 1 (String.length motRestant - 1))
                     else

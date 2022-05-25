@@ -2,7 +2,9 @@
 open Ast
 %}
 
-%token STACK INPUT INPUT SPACE RETOUR RPAREN LPAREN COMMA SEMI INP STK STT INIT_STT INIT_STK TRANSI EOF
+%token RPAREN LPAREN COMMA SEMI INP STK STT INIT_STT INIT_STK TRANSI EOF (* COLON *)
+%token<char> STATE INPUT STACK
+
 
 %start<Ast.automate> input
 
@@ -11,38 +13,50 @@ open Ast
 
 input : a = automate EOF { a }
 automate:
-INP x1 = expression_input RETOUR STK x2 = expression_stack RETOUR
- STT x3 = expression_state RETOUR INIT_STT x4 = INPUT RETOUR
- INIT_STK x5 = STACK RETOUR TRANSI                          { Before(x1, x2, x3, x4, x5) }
+INP inputSymbol = expression_input STK stackSymbol = expression_stack
+ STT states = expression_state INIT_STT initialState = state_init
+ INIT_STK initialStack = stack_init TRANSI transitions = list(transition)
+                                                      {if(List.length transitions = 0) then failwith "aucune transition"
+                                                       else Automate(inputSymbol, stackSymbol, states, initialState, initialStack, transitions) }
+
+state_init:
+x = separated_list(COMMA, STATE)                       {if (List.length x = 1) then
+                                                            match x with
+                                                            | [] -> failwith "pas d'état initial"
+                                                            | a::b -> a
+                                                        else failwith "il ne peut pas y avoir plus de 1 état initial"
+                                                        }
+
+stack_init:
+x = separated_list(COMMA, STACK)                      {if (List.length x = 1) then
+                                                            match x with
+                                                            | [] -> failwith "pas de stack initial"
+                                                            | a::b -> a
+                                                       else failwith "il ne peut pas y avoir plus de 1 état initial"
+                                                      }
 
 expression_stack:
-x = STACK                                                   { Var(x) }
-| l = expression_stack COMMA SPACE r = expression_stack     { Stack(l, r) }
-| l = expression_stack COMMA r = expression_stack           { Stack(l, r) }
+x = separated_list(COMMA, STACK)                      {match x with
+                                                       | [] -> failwith "no stack"
+                                                       | a::b -> x
+                                                      }
 
 expression_input:
-x = INPUT                                                   { Var(x) }
-| l = expression_input COMMA SPACE r = expression_input     { Input(l, r) }
-| l = expression_input COMMA r = expression_input           { Input(l, r) }
+x = separated_list(COMMA, INPUT)                      {match x with
+                                                       | [] -> failwith "no input"
+                                                       | a::b -> x
+                                                      }
 
 expression_state:
-x = STATE                                                   { Int(x) }
-| l = expression_state COMMA SPACE r = expression_state     { State(l, r) }
-| l = expression_state COMMA r = expression_state           { State(l, r) }
+x = separated_list(COMMA, STATE)                      {match x with
+                                                       | [] -> failwith "no state"
+                                                       | a::b -> x
+                                                      }
 
-expression_transi:
-| LPAREN etape_avant = STATE COMMA  input = input_final COMMA
- avant = STACK COMMA etape_apres = STATE COMMA apres = push { Transi(etape_avant, input, avant, etape_apres, apres) }
+transition:
+LPAREN z1 = STATE COMMA z2 = option(INPUT) COMMA z3 = STACK COMMA z4 = STATE COMMA
+z5 = separated_list(SEMI, STACK) RPAREN                          {match z2 with
+                                                                  | None -> Transition(z1, ' ', z3, z4, z5)
+                                                                  | Some a -> Transition(z1, a, z3, z4, z5)
+                                                                 }
 
-input_final:
-x = INPUT                                                   { Input_finale (x) }
-| x = ""                                                    { Input_finale (x) }
-
-push:
-x = STACK                                                   { Var(x) }
-| x = STACK SEMI x2 = STACK                                 { Pile(x, x2) }
-
-
-expression:
-x=ID  { Var x }
-| l=expression COMMA r=expression { Or (l, r) }

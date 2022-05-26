@@ -51,7 +51,7 @@ let stringTransition (t: transition) =
     | Transition(stateEnCours, symboleConsomme, stackConsomme, stateApres, stackAjoute)->
         "(" ^ String.make 1 stateEnCours ^ "," ^ String.make 1 symboleConsomme ^ "," ^ String.make 1 stackConsomme ^ "," ^ String.make 1 stateApres ^ "," ^ stringStackAjoute stackAjoute ^ ")"
 
-let rec transition (c : config) (t: transitionlist) (i:int) =
+let rec transition (c : config) (t: transitionlist) =
     match c with
     | Config( stateEnCoursPil, pil, motRestant ) ->
         match t with
@@ -59,12 +59,12 @@ let rec transition (c : config) (t: transitionlist) (i:int) =
             | a::b ->
                 match a with
                 | Transition ( stateEnCours, symboleConsomme, stackConsomme, stateApres, stackAjoute ) ->
-                    if(String.length motRestant = 0 && stateEnCoursPil = stateEnCours && stackConsomme = List.hd pil && symboleConsomme = ' ' ) then
+                    if (stateEnCoursPil = stateEnCours && stackConsomme = List.hd pil && symboleConsomme = ' ' ) then
                         Config(stateApres, ajoutPile pil (List.rev stackAjoute), motRestant)
-                    else if (stateEnCoursPil = stateEnCours && stackConsomme = List.hd pil && String.make 1 symboleConsomme = String.sub motRestant 0 1 ) then
+                    else if (stateEnCoursPil = stateEnCours && stackConsomme = List.hd pil && (String.make 1 symboleConsomme = String.sub motRestant 0 1)) then
                         Config(stateApres, ajoutPile pil (List.rev stackAjoute), String.sub motRestant 1 (String.length motRestant - 1))
                     else
-                        transition c b (i+1)
+                        transition c b
 
 let rec lancer (c : config) (t: transitionlist) =
     match c with
@@ -77,7 +77,7 @@ let rec lancer (c : config) (t: transitionlist) =
         else if(List.length pil > 1 && String.length motRestant = 0) then failwith "Pile non vide avec un mot vide"
         else if(List.length pil = 0 && String.length motRestant = 0) then print_string "Fin, l'automate a bien reconnu le mot\n"
         else
-        let config = transition c t 1 in
+        let config = transition c t in
             lancer config t
 
 let stringErrorTransition ( t : transition ) ( e : string ) =

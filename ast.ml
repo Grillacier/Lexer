@@ -33,10 +33,23 @@ let ajoutPile (pil : liste) (ajout : liste) =
     | [] -> failwith "pile vide"
     | a::b -> ajout @ b
 
+let rec stringResteStackAjoute l =
+    match l with
+    | [] -> ""
+    | a::b -> ";" ^ String.make 1 a
+
+let stringStackAjoute l =
+    match l with
+    | [] -> ""
+    | a::b ->
+        match b with
+        | [] -> String.make 1 a
+        | c::d -> String.make 1 a ^ stringResteStackAjoute b
+
 let stringTransition (t: transition) =
     match t with
     | Transition(stateEnCours, symboleConsomme, stackConsomme, stateApres, stackAjoute)->
-        "(" ^ String.make 1 stateEnCours ^ "," ^ String.make 1 symboleConsomme ^ "," ^ String.make 1 stackConsomme ^ "," ^ String.make 1 stateApres ^ "," ^stringList stackAjoute ^ ")"
+        "(" ^ String.make 1 stateEnCours ^ "," ^ String.make 1 symboleConsomme ^ "," ^ String.make 1 stackConsomme ^ "," ^ String.make 1 stateApres ^ "," ^ stringStackAjoute stackAjoute ^ ")"
 
 let rec transition (c : config) (t: transitionlist) (i:int) =
     match c with
@@ -67,7 +80,17 @@ let rec lancer (c : config) (t: transitionlist) =
         let config = transition c t 1 in
             lancer config t
 
-let rec testTransi (l : transitionlist) (t : transition) =
+let stringErrorTransition ( t : transition ) ( e : string ) =
+    "error : " ^ e ^ " dans la transition : " ^ (stringTransition t)
+
+let rec testStack ( stackAjoute : liste ) ( stack : liste ) =
+    match stackAjoute with
+    | [] -> true
+    | a::b ->
+        if( List.mem a stack = false ) then false
+        else testStack b stack
+
+let rec testTransi (l : transitionlist) (t : transition) (input : liste) (stack : liste) (state : liste) =
     match l with
     | [] -> true
     | a::b ->
@@ -77,21 +100,25 @@ let rec testTransi (l : transitionlist) (t : transition) =
             | Transition ( stateEnCours2, symboleConsomme2, stackConsomme2, stateApres2, stackAjoute2 ) ->
                 if(stateEnCours = stateEnCours2 && (symboleConsomme = symboleConsomme2 || symboleConsomme = ' ' || symboleConsomme2 = ' ') && stackConsomme = stackConsomme2) then
                     failwith "non déterministe"
+                else if ( List.mem stateEnCours state = false ) then failwith (stringErrorTransition a "Etat en cours (dans la transition) de la transition non reconnu")
+                else if ( List.mem symboleConsomme input = false && symboleConsomme != ' ' ) then failwith (stringErrorTransition a "Symbole consommé non reconnu")
+                else if ( List.mem stackConsomme stack = false ) then failwith (stringErrorTransition a "Stack consommé non reconnu")
+                else if ( List.mem stateApres state = false ) then failwith (stringErrorTransition a "Etat suivant non reconnu")
+                else if ( testStack stackAjoute stack = false ) then failwith (stringErrorTransition a "Stack ajoute non reconnu")
                 else
-                    testTransi b t
+                    testTransi b t input stack state
 
-let rec testDeterministe (l : transitionlist) =
+let rec testTransitions(l : transitionlist) (input : liste) (stack : liste) (state : liste) = (* Teste si l'automate est déterministe et que chaque transition respecte l'ensemble des input, stack et state *)
     match l with
     | [] -> true
-    | a::b -> testTransi b a && testDeterministe b
-
+    | a::b -> testTransi b a input stack state && testTransitions b input stack state
 
 let init (m : mot ) (a : automate) =
     match a with
     | Automate (inputSymbols, stackSymbols, states, initialState, initialStack, transi) ->
         if(List.mem initialState states = false) then failwith "état initial non dans l’ensemble des états"
         else if(List.mem initialStack stackSymbols = false) then failwith "symbole de pile initial non dans l'ensemble des symboles de pile"
-        else if(testDeterministe transi = true) then
+        else if(testTransitions transi inputSymbols stackSymbols states = true) then
             Config(initialState, [initialStack], m)
         else
             failwith "quelque chose s'est mal passé"

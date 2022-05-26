@@ -1,5 +1,5 @@
 {
-open Parser2
+open Parser
 }
 
 let layout = [ ' ' '\t' '\n' ]
@@ -10,7 +10,7 @@ let states = ['0'-'9']
 rule main = parse
   | layout		                 { main lexbuf } (*string sans les char de layout*)
   | stack_symbol as i            { STACK (i) } (*recupere valeur de i*)
-  | states as i                  { STATE (i) }
+  | states as i                  { STATES (i) }
   | input as i                   { INPUT (i) }
   | ','		                     { COMMA }
   | ":"                          { COLONS }
@@ -25,6 +25,7 @@ rule main = parse
   | "of"                         { OF }
   | "begin"                      { BEGIN }
   | "next"                       { NEXT }
+  | "top"                        { TOP }
   | "push"                       { PUSH }
   | "pop"                        { POP }
   | "change"                     { CHANGE } (*change x : change l'etat en x*)

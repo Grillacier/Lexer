@@ -20,7 +20,7 @@ rule main = parse
   | "stack symbols:"             { STK }
   | "states:"                    { STT }
   | "initial state:"             { INIT_STT }
-  | "initial stack symbol:"      { INIT_STK }
+  | "initial stack:"             { INIT_STK }
   | "transitions:"               { TRANSI }
   | eof                          { EOF }
   | _			                 { failwith "unexpected character" }

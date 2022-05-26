@@ -52,6 +52,11 @@ let stringTransition (t: transition) =
         "(" ^ String.make 1 stateEnCours ^ "," ^ String.make 1 symboleConsomme ^ "," ^ String.make 1 stackConsomme
         ^ "," ^ String.make 1 stateApres ^ "," ^ stringStackAjoute stackAjoute ^ ")"
 
+let rec stringTransitionsList (t: transition list) =
+    match t with
+    |[] -> ""
+    |a::b -> stringTransition a ^ "\n" ^ stringTransitionsList b
+
 let rec transition (c : config) (t: transitionlist) =
     match c with
     | Config( stateEnCoursPil, pil, motRestant ) ->

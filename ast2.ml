@@ -4,14 +4,35 @@ type liste = all list (* char list *)
 
 type mot = string
 
-type config = Config of all * liste * mot (* stateEnCours * pile * motRestant *)
+type beginInstr = BeginInstr of char * mot
 
-type transition = Transition of all * all * all * all * liste (* stateEnCours * symboleConsomme * stackConsomme * stateApres * stackAjoute *)
+type nextInstr = NextInstr of all * mot * all
+
+type nextList = nextInstr list
+
+(*state * motLu * instr*)
+type topInst = TopInstr of all * all * mot
+
+type topList = topInst list
+
+type inst = Inst of all * mot
+
+(* stateEnCours * pile * motRestant *)
+type config = Config of all * liste * mot
+
+(* stateEnCours * symboleConsomme * stackConsomme * stateApres * stackAjoute *)
+type transition = Transition of all * all * all * all * liste
+
+type prog = Prog of beginInstr * nextList * beginInstr * topList * inst
 
 type transitionlist = transition list
 
 (* inputSymbols * stackSymbols * states * initialState * initialStack transitionList *)
 type automate = Automate of liste * liste * liste * all * all * transitionlist
+
+(* inputSymbols * stackSymbols * states * initialState * initialStack * prog *)
+type automateBis = AutomateBis of liste * liste * liste * all * all * prog
+
 
 let rec stringList l =
     match l with
@@ -28,10 +49,29 @@ let rec recupTransitions ( a : automate ) =
     | Automate ( inputSymbols, stackSymbols, states, initialState, initialStack, transitionList ) ->
         transitionList
 
+let rec recupProg ( a : automateBis ) =
+    match a with
+    | AutomateBis ( inputSymbols, stackSymbols, states, initialState, initialStack, program ) ->
+        program
+
 let ajoutPile (pil : liste) (ajout : liste) =
     match pil with
     | [] -> failwith "pile vide"
     | a::b -> ajout @ b
+
+
+let pop (pil : liste) =
+    match pil with
+    | [] -> failwith "pile vide"
+    | a::b -> b
+
+let push (pil : liste) (ajout : all) =
+    ajout::pil
+
+(*arrete l'execution avec un message de refus*)
+let reject (msg : string) =
+    failwith msg
+
 
 let rec stringResteStackAjoute l =
     match l with
@@ -51,6 +91,13 @@ let stringTransition (t: transition) =
     | Transition(stateEnCours, symboleConsomme, stackConsomme, stateApres, stackAjoute)->
         "(" ^ String.make 1 stateEnCours ^ "," ^ String.make 1 symboleConsomme ^ "," ^ String.make 1 stackConsomme
         ^ "," ^ String.make 1 stateApres ^ "," ^ stringStackAjoute stackAjoute ^ ")"
+
+let stringProgram (p: prog) =
+    match p with
+    | Prog(beginInstr, nextList, beginInstr, topList, inst) ->
+        "case state of\n" ^ stringBeginInstr beginInstr ^ "\n \t case next of \n" ^
+        stringNextList nextList ^ "\n \t end\n" ^ stringBeginInstr beginInstr ^ "\n \t case top of \n" ^
+        stringTopList topList ^ "\n \t end\n" ^ stringInst inst ^ "\n end"
 
 let rec transition (c : config) (t: transitionlist) (i:int) =
     match c with
@@ -101,11 +148,11 @@ let rec testTransi (l : transitionlist) (t : transition) (input : liste) (stack 
             | Transition ( stateEnCours2, symboleConsomme2, stackConsomme2, stateApres2, stackAjoute2 ) ->
                 if(stateEnCours = stateEnCours2 && (symboleConsomme = symboleConsomme2 || symboleConsomme = ' ' || symboleConsomme2 = ' ') && stackConsomme = stackConsomme2) then
                     failwith "non déterministe"
-                else if ( List.mem stateEnCours state = false ) then failwith (stringErrorTransition a "Etat en cours (dans la transition) de la transition non reconnu")
-                else if ( List.mem symboleConsomme input = false && symboleConsomme != ' ' ) then failwith (stringErrorTransition a "Symbole consommé non reconnu")
-                else if ( List.mem stackConsomme stack = false ) then failwith (stringErrorTransition a "Stack consommé non reconnu")
-                else if ( List.mem stateApres state = false ) then failwith (stringErrorTransition a "Etat suivant non reconnu")
-                else if ( testStack stackAjoute stack = false ) then failwith (stringErrorTransition a "Stack ajoute non reconnu")
+                else if ( List.mem stateEnCours state = false ) then failwith (stringErrorTransition a "Etat en cours (dans la transition) de la transition pas reconnu")
+                else if ( List.mem symboleConsomme input = false && symboleConsomme != ' ' ) then failwith (stringErrorTransition a "Symbole consommé pas reconnu")
+                else if ( List.mem stackConsomme stack = false ) then failwith (stringErrorTransition a "Stack consommé pas reconnu")
+                else if ( List.mem stateApres state = false ) then failwith (stringErrorTransition a "Etat suivant pas reconnu")
+                else if ( testStack stackAjoute stack = false ) then failwith (stringErrorTransition a "Stack ajoute pas reconnu")
                 else
                     testTransi b t input stack state
 
@@ -117,8 +164,8 @@ let rec testTransitions(l : transitionlist) (input : liste) (stack : liste) (sta
 let init (m : mot ) (a : automate) =
     match a with
     | Automate (inputSymbols, stackSymbols, states, initialState, initialStack, transi) ->
-        if(List.mem initialState states = false) then failwith "état initial non dans l’ensemble des états"
-        else if(List.mem initialStack stackSymbols = false) then failwith "symbole de pile initial non dans l'ensemble des symboles de pile"
+        if(List.mem initialState states = false) then failwith "état initial pas dans l’ensemble des états"
+        else if(List.mem initialStack stackSymbols = false) then failwith "symbole de pile initial pas dans l'ensemble des symboles de pile"
         else if(testTransitions transi inputSymbols stackSymbols states = true) then
             Config(initialState, [initialStack], m)
         else

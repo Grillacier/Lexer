@@ -1,8 +1,8 @@
 %{
-open Ast
+open Ast2
 %}
 
-%token RPAREN LPAREN COMMA SEMI INP STK STT INIT_STT INIT_STK TRANSI EOF
+%token COMMA COLONS INP STK STT INIT_STT INIT_STK PROG CASE STATE OF BEGIN NEXT PUSH POP CHANGE REJECT END EOF
 %token<char> STATE INPUT STACK
 
 
@@ -13,9 +13,12 @@ open Ast
 
 input : a = automate EOF { a }
 automate:
-INP inputSymbol = expression_input STK stackSymbol = expression_stack
- STT states = expression_state INIT_STT initialState = state_init
- INIT_STK initialStack = stack_init TRANSI transitions = list(transition)
+INP inputSymbol = expression_input
+STK stackSymbol = expression_stack
+STT states = expression_state
+INIT_STT initialState = state_init
+INIT_STK initialStack = stack_init
+PROG program = list(prog)
                                                       {if(List.length transitions = 0) then failwith "aucune transition"
                                                        else Automate(inputSymbol, stackSymbol, states, initialState, initialStack, transitions) }
 
@@ -53,15 +56,21 @@ x = separated_list(COMMA, STATE)                      {match x with
                                                        | a::b -> x
                                                       }
 
-transition:
-LPAREN
-z1 = STATE COMMA
-z2 = option(INPUT) COMMA
-z3 = STACK COMMA
-z4 = STATE COMMA
-z5 = separated_list(SEMI, STACK)
-RPAREN                                                  {match z2 with
-                                                         | None -> Transition(z1, ' ', z3, z4, z5)
-                                                         | Some a -> Transition(z1, a, z3, z4, z5)
-                                                        }
+prog:
+CASE STATE OF
+state1 = STATE COLONS BEGIN
+CASE NEXT OF
+inputA = option(INPUT) COLONS PUSH STACK
+inputB = option(INPUT) COLONS PUSH STACK
+inputC = option(INPUT) COLONS CHANGE STATE
+END
+state2 = STATE COLONS BEGIN
+CASE TOP OF
+stackA = STACK COLONS BEGIN CASE NEXT OF inputA: POP END
+stackB = STACK COLONS BEGIN CASE NEXT OF inputB: POP END
+stackZ = STACK COLONS POP
+END                                                              {match z2 with
+                                                                  | None -> Transition(z1, ' ', z3, z4, z5)
+                                                                  | Some a -> Transition(z1, a, z3, z4, z5)
+                                                                 }
 

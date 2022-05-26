@@ -8,7 +8,7 @@ let stack_symbol = ['A'-'Z']
 let state = ['0'-'9']
 
 rule main = parse
-  | layout		                 { main lexbuf }
+  | layout		                 { main lexbuf } (*string sans les char de layout*)
   | stack_symbol as i            { STACK (i) }
   | state as i                   { STATE (i) }
   | input as i                   { INPUT (i) }
@@ -16,7 +16,6 @@ rule main = parse
   | '('			                 { LPAREN }
   | ','		                     { COMMA }
   | ';'		                     { SEMI }
-  (*| ":"                        { COLON }*)
   | "input symbols:"             { INP }
   | "stack symbols:"             { STK }
   | "states:"                    { STT }

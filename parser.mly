@@ -34,7 +34,7 @@ let rec print_program l =
     |[] -> ()
     |(s, instr)::b -> print_char(s); print_string(" "); print_list_instr instr; print_string("\n"); print_program b
 
-
+(*fonctions next : regarder mot a lire, creer une transition pour tous les symboles de piles*)
 let rec pushNext (state:char) (input:char) (stack:char list) (push:char) =
             match stack with
             |[] -> []
@@ -49,16 +49,6 @@ let rec changeNext (state:char) (input:char) (stack:char list) (newState:char) =
             match stack with
             |[] -> []
             |a::b -> Transition(state, input, a, newState, [a], false)::(changeNext state input b newState)
-
-let rec pushTop (state:char) (input:char list) (stack:char) (push:char) =
-            match input with
-            |[] -> []
-            |a::b -> Transition(state, a, stack, state, stack::[push], false)::(pushTop state b stack push)
-
-let rec changeTop (state:char) (input:char list) (stack:char) (newState:char) =
-            match input with
-            |[] -> []
-            |a::b -> Transition(state, a, stack, newState, [stack], false)::(changeTop state b stack newState)
 
 (*type transition = Transition of all * all * all * all * liste*)
 (*transforme une instruction en transition*)
@@ -78,9 +68,9 @@ let rec instr2trans (instr:instruction) (state:char) (stack_list:char list) (inp
                           |Next (character, inst) -> failwith("on ne peut pas avoir un next suivi d'un next"))
 
         |Top (c, i) -> (match i with
-                          |Push symbol -> pushTop state input_list c symbol
-                          |Pop -> [Transition(state, ' ', c, state, [], false)]
-                          |Change s -> changeTop state input_list c s
+                          |Push symbol -> [Transition(state, ' ', c, state, symbol::[c], false)]
+                          |Pop -> [Transition(state, ' ', c, state, [], false)] (*entree pas consommee donc transition epsilon*)
+                          |Change s -> [Transition(state, ' ', c, s, [], false)]
                           |Reject -> [Transition(state, List.hd input_list, c, state, stack_list, true)]
                           |Next (character, inst) -> (match inst with
                                                       |Push symbol2 ->[Transition(state, character, c, state, [symbol2], false)]

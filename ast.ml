@@ -6,7 +6,7 @@ type mot = string
 
 type config = Config of all * liste * mot (* stateEnCours * pile * motRestant *)
 
-type transition = Transition of all * all * all * all * liste (* stateEnCours * symboleConsomme * stackConsomme * stateApres * stackAjoute *)
+type transition = Transition of all * all * all * all * liste * bool (* stateEnCours * symboleConsomme * stackConsomme * stateApres * stackAjoute * rejected *) (* if rejected is reached, stops the execution *)
 
 type transitionlist = transition list
 
@@ -48,7 +48,7 @@ let stringStackAjoute l =
 
 let stringTransition (t: transition) =
     match t with
-    | Transition(stateEnCours, symboleConsomme, stackConsomme, stateApres, stackAjoute)->
+    | Transition(stateEnCours, symboleConsomme, stackConsomme, stateApres, stackAjoute, rejected)->
         "(" ^ String.make 1 stateEnCours ^ "," ^ String.make 1 symboleConsomme ^ "," ^ String.make 1 stackConsomme
         ^ "," ^ String.make 1 stateApres ^ "," ^ stringStackAjoute stackAjoute ^ ")"
 
@@ -64,8 +64,9 @@ let rec transition (c : config) (t: transitionlist) =
             | [] -> failwith "Aucune transition ne s'applique"
             | a::b ->
                 match a with
-                | Transition ( stateEnCours, symboleConsomme, stackConsomme, stateApres, stackAjoute ) ->
-                    if (stateEnCoursPil = stateEnCours && stackConsomme = List.hd pil && symboleConsomme = ' ' ) then
+                | Transition ( stateEnCours, symboleConsomme, stackConsomme, stateApres, stackAjoute, rejected ) ->
+                    if( rejected ) then failwith "instruction reject atteint"
+                    else if (stateEnCoursPil = stateEnCours && stackConsomme = List.hd pil && symboleConsomme = ' ' ) then
                         Config(stateApres, ajoutPile pil (List.rev stackAjoute), motRestant)
                     else if (stateEnCoursPil = stateEnCours && stackConsomme = List.hd pil && (String.make 1 symboleConsomme = String.sub motRestant 0 1)) then
                         Config(stateApres, ajoutPile pil (List.rev stackAjoute), String.sub motRestant 1 (String.length motRestant - 1))
@@ -101,9 +102,9 @@ let rec testTransi (l : transitionlist) (t : transition) (input : liste) (stack 
     | [] -> true
     | a::b ->
         match a with
-        | Transition ( stateEnCours, symboleConsomme, stackConsomme, stateApres, stackAjoute ) ->
+        | Transition ( stateEnCours, symboleConsomme, stackConsomme, stateApres, stackAjoute, rejected ) ->
             match t with
-            | Transition ( stateEnCours2, symboleConsomme2, stackConsomme2, stateApres2, stackAjoute2 ) ->
+            | Transition ( stateEnCours2, symboleConsomme2, stackConsomme2, stateApres2, stackAjoute2, rejected2 ) ->
                 if(stateEnCours = stateEnCours2 && (symboleConsomme = symboleConsomme2 || symboleConsomme = ' ' || symboleConsomme2 = ' ') && stackConsomme = stackConsomme2) then
                     failwith "non déterministe"
                 else if ( List.mem stateEnCours state = false ) then failwith (stringErrorTransition a "Etat en cours (dans la transition) de la transition non reconnu")

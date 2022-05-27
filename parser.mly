@@ -38,27 +38,27 @@ let rec print_program l =
 let rec pushNext (state:char) (input:char) (stack:char list) (push:char) =
             match stack with
             |[] -> []
-            |a::b -> Transition(state, input, a, state, a::[push])::(pushNext state input b push)
+            |a::b -> Transition(state, input, a, state, a::[push], false)::(pushNext state input b push)
 
 let rec popNext (state:char) (input:char) (stack:char list) =
             match stack with
             |[] -> []
-            |a::b -> Transition(state, input, a, state, [])::(popNext state input b)
+            |a::b -> Transition(state, input, a, state, [], false)::(popNext state input b)
 
 let rec changeNext (state:char) (input:char) (stack:char list) (newState:char) =
             match stack with
             |[] -> []
-            |a::b -> Transition(state, input, a, newState, [a])::(changeNext state input b newState)
+            |a::b -> Transition(state, input, a, newState, [a], false)::(changeNext state input b newState)
 
 let rec pushTop (state:char) (input:char list) (stack:char) (push:char) =
             match input with
             |[] -> []
-            |a::b -> Transition(state, a, stack, state, stack::[push])::(pushTop state b stack push)
+            |a::b -> Transition(state, a, stack, state, stack::[push], false)::(pushTop state b stack push)
 
 let rec changeTop (state:char) (input:char list) (stack:char) (newState:char) =
             match input with
             |[] -> []
-            |a::b -> Transition(state, a, stack, newState, [stack])::(changeTop state b stack newState)
+            |a::b -> Transition(state, a, stack, newState, [stack], false)::(changeTop state b stack newState)
 
 (*type transition = Transition of all * all * all * all * liste*)
 (*transforme une instruction en transition*)
@@ -68,25 +68,25 @@ let rec instr2trans (instr:instruction) (state:char) (stack_list:char list) (inp
                           |Push symbol -> pushNext state c stack_list symbol
                           |Pop -> popNext state c stack_list
                           |Change s -> changeNext state c stack_list s
-                          |Reject -> [Transition(state, c, List.hd stack_list, state, stack_list)]
+                          |Reject -> [Transition(state, c, List.hd stack_list, state, stack_list, true)]
                           |Top (character, inst) -> (match inst with
-                                                     | Push symbol2 -> [Transition(state, c, character, state, [symbol2])]
-                                                     | Pop -> [Transition(state, c, character, state, [])]
-                                                     | Change s -> [Transition(state, c, character, s, [c])]
-                                                     | Reject -> [Transition(state, c, List.hd stack_list, state, stack_list)]
+                                                     | Push symbol2 -> [Transition(state, c, character, state, [symbol2], false)]
+                                                     | Pop -> [Transition(state, c, character, state, [], false)]
+                                                     | Change s -> [Transition(state, c, character, s, [c], false)]
+                                                     | Reject -> [Transition(state, c, List.hd stack_list, state, stack_list, true)]
                                                      |_ -> failwith "On ne peut pas avoir plus de deux instructions imbriquées")
                           |Next (character, inst) -> failwith("on ne peut pas avoir un next suivi d'un next"))
 
         |Top (c, i) -> (match i with
                           |Push symbol -> pushTop state input_list c symbol
-                          |Pop -> [Transition(state, ' ', c, state, [])]
+                          |Pop -> [Transition(state, ' ', c, state, [], false)]
                           |Change s -> changeTop state input_list c s
-                          |Reject -> [Transition(state, List.hd input_list, c, state, stack_list)]
+                          |Reject -> [Transition(state, List.hd input_list, c, state, stack_list, true)]
                           |Next (character, inst) -> (match inst with
-                                                      |Push symbol2 ->[Transition(state, character, c, state, [symbol2])]
-                                                      |Pop -> [Transition(state, character, c, state, [])]
-                                                      |Change s -> [Transition(state, character, c, s, [character])]
-                                                      |Reject -> [Transition(state, List.hd input_list, c, state, stack_list)]
+                                                      |Push symbol2 ->[Transition(state, character, c, state, [symbol2], false)]
+                                                      |Pop -> [Transition(state, character, c, state, [], false)]
+                                                      |Change s -> [Transition(state, character, c, s, [character], false)]
+                                                      |Reject -> [Transition(state, List.hd input_list, c, state, stack_list, true)]
                                                       |_ -> failwith "On ne peut pas avoir plus de deux instructions imbriquées" )
                           |Top (character, inst) -> failwith("on ne peut pas avoir un top suivi d'un top"))
         |_ -> failwith("ce n'est pas une instruction")
@@ -174,8 +174,8 @@ z3 = STACK COMMA
 z4 = STATES COMMA
 z5 = separated_list(SEMI, STACK)
 RPAREN                                                  {match z2 with
-                                                         | None -> Transition(z1, ' ', z3, z4, z5)
-                                                         | Some a -> Transition(z1, a, z3, z4, z5)
+                                                         | None -> Transition(z1, ' ', z3, z4, z5, false)
+                                                         | Some a -> Transition(z1, a, z3, z4, z5, false)
                                                         }
 
  prog:

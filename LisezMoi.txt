@@ -5,3 +5,5 @@ pour executer le code ./parser <mot à tester> <fichier automate>
 
 La partie 1 et 2 sont complètes ( réalisé par Zhou Cédric)
 La partie 3 est complète (réalisé par Silvestre Alaia)
+
+exemples_etape3 n'est pas implémenté
